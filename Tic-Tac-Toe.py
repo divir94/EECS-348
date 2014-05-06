@@ -1,3 +1,5 @@
+from time import time
+
 class TicTacToeBoard:
 
     def __init__(self):
@@ -44,54 +46,58 @@ class TicTacToeBoard:
                 s +=  str(self.get_square(i,j)) + '|'
             s += '\n-----\n'
         return s
-                
 
-def minimax(board, depth, maximizingPlayer):
-    #print board
-    if board.winner() == 'X': return 1, (-2,-2) # I guess the return move (-2,-2) doesn't matter
-    elif board.winner() == 'O': return -1, (-2,-2)
-    elif depth == 0 or board.full_board(): return 0, (-2,-2)
+    
+def minimax(board, depth, alpha, beta, maximizingPlayer, count, pruning):
+    # base case
+    if board.winner() == 'X': return 1, (-2,-2), count # I guess the return move (-2,-2) doesn't matter
+    elif board.winner() == 'O': return -1, (-2,-2), count
+    elif depth == 0 or board.full_board(): return 0, (-2,-2), count
 
+    bestMove = (-1,-1)
+    
     if maximizingPlayer:
-        bestValue = float("-inf")
-        bestMove = (-1,-1)
         for i in range(3):
             for j in range(3):
                 if board.get_square(i,j) == 'N':
-                    board.play_square(i,j,'X')
-                    val, (besti, bestj) = minimax(board, depth-1, False)
+                    board.play_square(i,j,'X') # try value
+                    val, (besti, bestj), count = minimax(board, depth-1, alpha, beta, False, count+1, pruning)
+                    board.play_square(i,j,'N') # restore value
                     # update bestValue 
-                    if val > bestValue:
-                        bestValue = val
+                    if val > alpha:
+                        alpha = val
                         bestMove = (i,j)
-                    board.play_square(i,j,'N')
-        return bestValue, bestMove
-    else:
-        bestValue = float("inf")
+                    if pruning:
+                        if beta <= alpha:   break
+                    
+        return alpha, bestMove, count
+    
+    else:        
         for i in range(3):
             for j in range(3):
                 if board.get_square(i,j) == 'N':
                     board.play_square(i,j,'O')
-                    val, (besti, bestj) = minimax(board, depth-1, True)
-                    # update bestValue 
-                    if val < bestValue:
-                        bestValue = val
-                        bestMove = (i,j)
+                    val, (besti, bestj), count = minimax(board, depth-1, alpha, beta, True, count+1, pruning)
                     board.play_square(i,j,'N')
-        return bestValue, bestMove
-
-    
+                    # update bestValue 
+                    if val < beta:
+                        beta = val
+                        bestMove = (i,j)
+                    if pruning:
+                        if beta <= alpha:   break
+                    
+        return beta, bestMove, count
     
 
 def play():
     Board = TicTacToeBoard()
     humanval =  'X'
     cpuval = 'O'
-    depth = 7 # Number of moves to look ahead
+    depth = 9 # Number of moves to look ahead
     print Board
     
     while( Board.full_board()==False and Board.winner() == 'N'):
-        print "your move, pick a row and column (0-2)"
+        print "your move, pick a row, column (0-2) e.g. 0,2"
         row, col = input()
         row, col = int(row), int(col)
 
@@ -104,9 +110,12 @@ def play():
                 break
             else:
                 print Board
-                print "CPU Move" 
-                bestValue, bestMove = minimax(Board, depth, False)
+                print "CPU Move"
+                start_time = time()
+                bestValue, bestMove, count = minimax(Board, depth, float("-Inf"), float("Inf"), False, 0, True)
+                elapsed_time = time() - start_time
                 Board.play_square(bestMove[0], bestMove[1], cpuval)
+                print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
                 print Board
 
     print Board
