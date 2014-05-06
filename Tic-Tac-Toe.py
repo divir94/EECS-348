@@ -1,9 +1,8 @@
 from time import time
 
 class TicTacToeBoard:
-
     def __init__(self):
-        self.board = (['N']*3,['N']*3,['N']*3)
+        self.board = ([' ']*3,[' ']*3,[' ']*3)
                                       
     def play_square(self, row, col, val):
         self.board[row][col] = val
@@ -12,32 +11,32 @@ class TicTacToeBoard:
         return self.board[row][col]
 
     def full_board(self):
-        for i in range(len(self.board)):
-            for j in range(len(self.board)):
-                if(self.board[i][j]=='N'):
+        for i in range(3):
+            for j in range(3):
+                if(self.board[i][j]==' '):
                     return False
 
         return True
     
     #if there is a winner this will return their symbol (either 'X' or 'O'),
-    #otherwise it will return 'N'
+    #otherwise it will return ' '
     def winner(self):
         #check the cols
         for col in range(3):
-            if(self.board[col][0]!='N' and self.board[col][0] == self.board[col][1] and self.board[col][0]==self.board[col][2] ):
+            if(self.board[col][0]!=' ' and self.board[col][0] == self.board[col][1] and self.board[col][0]==self.board[col][2] ):
                 return self.board[col][0]
             
         #check the rows
         for row in range(3):
-            if(self.board[0][row]!='N' and self.board[0][row] == self.board[1][row] and self.board[0][row]==self.board[2][row] ):
+            if(self.board[0][row]!=' ' and self.board[0][row] == self.board[1][row] and self.board[0][row]==self.board[2][row] ):
                 return self.board[0][row]
 
         #check diagonals
-        if(self.board[0][0]!='N' and self.board[0][0] == self.board[1][1] == self.board[2][2] ):
+        if(self.board[0][0]!=' ' and self.board[0][0] == self.board[1][1] == self.board[2][2] ):
             return self.board[0][0]
-        if(self.board[0][2]!='N' and self.board[0][2] == self.board[1][1] == self.board[2][0] ):
+        if(self.board[0][2]!=' ' and self.board[0][2] == self.board[1][1] == self.board[2][0] ):
             return self.board[0][2]
-        return 'N'
+        return ' '
 
     def __repr__(self):
         s = '\n-----\n'
@@ -48,45 +47,36 @@ class TicTacToeBoard:
         return s
 
     
-def minimax(board, depth, alpha, beta, maximizingPlayer, count, pruning):
+def minimax(board, maximizingPlayer, pruning, alpha, beta, depth, count):
     # base case
+    # return values are (payoff, (bestMove_i, bestMove_j), count)
     if board.winner() == 'X': return 1, (-2,-2), count # I guess the return move (-2,-2) doesn't matter
     elif board.winner() == 'O': return -1, (-2,-2), count
     elif depth == 0 or board.full_board(): return 0, (-2,-2), count
 
     bestMove = (-1,-1)
+    symbol = {True: 'X', False: 'O'} # maximizing player has 'X' and minimizing 'O'
     
-    if maximizingPlayer:
-        for i in range(3):
-            for j in range(3):
-                if board.get_square(i,j) == 'N':
-                    board.play_square(i,j,'X') # try value
-                    val, (besti, bestj), count = minimax(board, depth-1, alpha, beta, False, count+1, pruning)
-                    board.play_square(i,j,'N') # restore value
-                    # update bestValue 
+    for i in range(3):
+        for j in range(3):
+            if board.get_square(i,j) == ' ': # if square not taken
+                board.play_square(i,j, symbol[maximizingPlayer] ) # try value
+                val, (bestMove_i, bestMove_j), count = minimax(board, not maximizingPlayer, pruning, alpha, beta, depth-1, count+1)
+                board.play_square(i,j,' ') # restore value
+                # update bestValue and bestMove
+                if maximizingPlayer:
                     if val > alpha:
                         alpha = val
                         bestMove = (i,j)
-                    if pruning:
-                        if beta <= alpha:   break
-                    
-        return alpha, bestMove, count
-    
-    else:        
-        for i in range(3):
-            for j in range(3):
-                if board.get_square(i,j) == 'N':
-                    board.play_square(i,j,'O')
-                    val, (besti, bestj), count = minimax(board, depth-1, alpha, beta, True, count+1, pruning)
-                    board.play_square(i,j,'N')
-                    # update bestValue 
+                else:
                     if val < beta:
                         beta = val
                         bestMove = (i,j)
-                    if pruning:
-                        if beta <= alpha:   break
-                    
-        return beta, bestMove, count
+                # if pruning, avoid unnecessary banches
+                if pruning and beta <= alpha: break
+
+    if maximizingPlayer: return alpha, bestMove, count
+    return beta, bestMove, count
     
 
 def play():
@@ -96,30 +86,30 @@ def play():
     depth = 9 # Number of moves to look ahead
     print Board
     
-    while( Board.full_board()==False and Board.winner() == 'N'):
-        print "your move, pick a row, column (0-2) e.g. 0,2"
+    while( Board.full_board()==False and Board.winner() == ' '):
+        print "your move, pick a row, column e.g. 0,2"
         row, col = input()
         row, col = int(row), int(col)
 
-        if(Board.get_square(row,col)!='N'):
+        if(Board.get_square(row,col)!=' '):
             print "square already taken!"
             continue
         else:
             Board.play_square(row,col,humanval)
-            if(Board.full_board() or Board.winner()!='N'):
+            if(Board.full_board() or Board.winner()!=' '):
                 break
             else:
                 print Board
                 print "CPU Move"
-                start_time = time()
-                bestValue, bestMove, count = minimax(Board, depth, float("-Inf"), float("Inf"), False, 0, True)
+                start_time = time() # record time
+                bestValue, bestMove, count = minimax(Board, False, True, float("-Inf"), float("Inf"), depth, 0)
                 elapsed_time = time() - start_time
-                Board.play_square(bestMove[0], bestMove[1], cpuval)
+                Board.play_square(bestMove[0], bestMove[1], cpuval) # play move
                 print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
                 print Board
 
     print Board
-    if(Board.winner()=='N'):
+    if(Board.winner()==' '):
         print "Cat game" 
     elif(Board.winner()==humanval):
         print "You Win!"
