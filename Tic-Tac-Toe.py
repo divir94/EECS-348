@@ -77,16 +77,28 @@ def minimax(board, maximizingPlayer, pruning, alpha, beta, depth, count):
 
     if maximizingPlayer: return alpha, bestMove, count
     return beta, bestMove, count
-    
+
+
+def makeMove(Board, depth, cpuval):
+    print "CPU Move"
+    start_time = time() # record time
+    bestValue, bestMove, count = minimax(Board, cpuval=='X', True, float("-Inf"), float("Inf"), depth, 0)
+    elapsed_time = time() - start_time
+    Board.play_square(bestMove[0], bestMove[1], cpuval) # play move
+    print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
+
 
 def play():
     Board = TicTacToeBoard()
-    humanval =  'X'
-    cpuval = 'O'
+    humanval =  'O'
+    cpuval = 'X'
     depth = 9 # Number of moves to look ahead
-    print Board
-    
+
+    if cpuval=='X':
+        makeMove(Board, depth, cpuval)
+        
     while( Board.full_board()==False and Board.winner() == ' '):
+        print Board
         print "your move, pick a row, column e.g. 0,2"
         row, col = input()
         row, col = int(row), int(col)
@@ -99,14 +111,7 @@ def play():
             if(Board.full_board() or Board.winner()!=' '):
                 break
             else:
-                print Board
-                print "CPU Move"
-                start_time = time() # record time
-                bestValue, bestMove, count = minimax(Board, False, True, float("-Inf"), float("Inf"), depth, 0)
-                elapsed_time = time() - start_time
-                Board.play_square(bestMove[0], bestMove[1], cpuval) # play move
-                print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
-                print Board
+                makeMove(Board, depth, cpuval)
 
     print Board
     if(Board.winner()==' '):
