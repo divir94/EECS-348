@@ -11,23 +11,31 @@ class TeamA:
           # a list of unit vectors (row, col)
           self.directions = [ (-1,-1), (-1,0), (-1,1), (0,-1),(0,1),(1,-1),(1,0),(1,1)]
      
-#prints the boards
+     #Prints the boards
      def __repr__(self):
         s = ""
         s += "Player count: %s\nOpp count: %s\n\n" % (self.player_count, self.opp_count)
         s += "   "  
-        s += " ".join([str(i) for i in range(1,self.size+1)])
+        s += " ".join([str(i) for i in range(self.size)])
         s += "\n   %s\n" % ('--'*self.size)
         for i in range(self.size):
-            s += str(i+1) + ' |'
+            s += str(i) + ' |'
             for j in range(self.size):
                 s +=  str(self.get_square(i,j)) + '|'
             s += "\n   %s\n" % ('--'*self.size)
         return s
 
-#checks every direction from the position which is input via "col" and "row", to see if there is an opponent piece
-#in one of the directions. If the input position is adjacent to an opponents piece, this function looks to see if there is a
-#a chain of opponent pieces in that direction, which ends with one of the players pieces. 
+     def full_board(self):
+        for i in range(self.size):
+            for j in range(self.size):
+                if(self.board[i][j]==' '): return False
+        return True
+
+     def winner(self): return ' '
+
+     #Checks every direction from the position which is input via "col" and "row", to see if there is an opponent piece
+     #in one of the directions. If the input position is adjacent to an opponents piece, this function looks to see if there is a
+     #a chain of opponent pieces in that direction, which ends with one of the players pieces. 
      def islegal(self, row, col, player, opp):
           if(self.get_square(row,col)!=" "):
                return False
@@ -49,7 +57,7 @@ class TeamA:
                               return True
           return False
           
-#returns true if the square was played, false if the move is not allowed
+     #Returns true if the square was played, false if the move is not allowed
      def place_piece(self, row, col, player, opp):
           if(self.get_square(row,col)!=" "):
                return False
@@ -87,8 +95,8 @@ class TeamA:
 
           return legal
 
-#Places piece of opponent's color at (row,col) and then returns 
-#  the best move, determined by the make_move(...) function
+     #Places piece of opponent's color at (row,col) and then returns 
+     #the best move, determined by the make_move(...) function
      def play_square(self, row, col, playerColor, oppColor):          
           # Place a piece of the opponent's color at (row,col)
           if (row,col) != (-1,-1):
@@ -97,18 +105,18 @@ class TeamA:
           # Determine best move and and return value to Matchmaker
           return self.make_move(playerColor, oppColor)
 
-#sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
-# (dist) to be a given value ( player )
+     #sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
+     #(dist) to be a given value ( player )
      def flip_tiles(self, row, col, Dir, dist, player):
           for i in range(dist):
                self.board[row+ i*Dir[0]][col + i*Dir[1]] = player
           return True
      
-#returns the value of a square on the board
+     #returns the value of a square on the board
      def get_square(self, row, col):
           return self.board[row][col]
 
-#Search the game board for a legal move, and play the first one it finds
+     #Search the game board for a legal move, and play the first one it finds
      def make_move(self, playerColor, oppColor):
           for row in range(self.size):
                for col in range(self.size):
@@ -137,7 +145,7 @@ class TeamA:
                          return (row,col)
           return (-1,-1)
 
-# Count number of player and opp pieces on the board
+     # Count number of player and opp pieces on the board
      def count_pieces(self, playerColor, oppColor) :
           player_count = opp_count = 0
           for row in range(self.size):
@@ -147,18 +155,40 @@ class TeamA:
           self.player_count = player_count
           self.opp_count = opp_count
           return
-          
 
 def play():
-     team = TeamA()
-     print team
-     players = ['B', 'W']
-     for i in range(4):
-          player = players[i%2]
-          opp = players[(i+1)%2]
-          team.make_move(player, opp)
-          print team
-          
+    Board = TeamA()
+    humanval = 'B'
+    cpuval = 'W'
+    depth = 2 # Number of moves to look ahead
+
+    if cpuval=='B':
+        Board.make_move(cpuval, humanval) # cpu move
+        
+    while( Board.full_board()==False and Board.winner() == ' '):
+        print Board
+        print "your move, pick a row, column e.g. 0,2"
+        row, col = input()
+        row, col = int(row), int(col)
+
+        if(Board.get_square(row,col)!=' '): # check for valid square
+            print "square already taken!"
+            continue
+        else:
+            Board.place_piece(row, col, humanval, cpuval) # human move
+            print Board
+            if(Board.full_board() or Board.winner()!=' '):
+                break
+            else:
+                Board.make_move(cpuval, humanval) # cpu move
+
+    print Board
+    if(Board.winner()==' '):
+        print "Cat game" 
+    elif(Board.winner()==humanval):
+        print "You Win!"
+    elif(Board.winner()==cpuval):
+        print "CPU Wins!"
 
 def main(): play()
 

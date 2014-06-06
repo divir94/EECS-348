@@ -96,14 +96,15 @@ def play():
 
     if cpuval=='X':
         makeMove(Board, depth, cpuval)
-        
+
+    # keep playing while board is not full and there is no winner
     while( Board.full_board()==False and Board.winner() == ' '):
         print Board
         print "your move, pick a row, column e.g. 0,2"
         row, col = input()
         row, col = int(row), int(col)
 
-        if(Board.get_square(row,col)!=' '):
+        if(Board.get_square(row,col)!=' '): # check for free square
             print "square already taken!"
             continue
         else:
