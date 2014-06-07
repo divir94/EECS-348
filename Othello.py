@@ -158,6 +158,8 @@ class TeamA:
           return
 
 
+""" ========================= minimax and other functions ==================== """
+
 def minimax(Board, maximizingPlayer, depth, count):
      # maximizing player has 'B' and minimizing 'W'
      if maximizingPlayer: player, opp = 'B', 'W'
@@ -198,55 +200,37 @@ def minimax(Board, maximizingPlayer, depth, count):
            return best_score, best_move, count
 
 
-def make_move(player, opp): pass
-
-def cpu_move(Board):
-     # record time
-     start_time = time()
-     
+def make_move(Board, player, opp):
      # check if any possible
-     cpu_move_possible = Board.any_legal_move(Board.player, Board.opp)
-     if not cpu_move_possible:
+     move_possible = Board.any_legal_move(player, opp)
+     if not move_possible:
           print "No possible move!"
           return
-     
-     # get cpu move
-     best_score, best_move, count = minimax(Board, Board.player=='B', Board.depth, 0)
-     
+
+     # get move
+     if player==Board.player: row, col, count, elapsed_time = cpu_move(Board)
+     else: row, col = human_move(Board)
+
      # play if legal, else try again
-     row, col = best_move[0], best_move[1]
-     
-     if not Board.play_legal_move(row, col, Board.player, Board.opp): return cpu_move(Board)
-     Board.play_legal_move(row, col, Board.player, Board.opp, flip=True)
-     
-     elapsed_time = time() - start_time
-     
+     if not Board.play_legal_move(row, col, player, opp): return make_move(Board, player, opp)
+     Board.play_legal_move(row, col, player, opp, flip=True)
+
      # print
-     print "Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time)
-     Board.print_stats(Board.player, row, col)
-     return
+     Board.print_stats(player, row, col)
+     if player==Board.player: print "Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time)
+
+def cpu_move(Board):
+     start_time = time()
+     best_score, best_move, count = minimax(Board, Board.player=='B', Board.depth, 0)
+     elapsed_time = time() - start_time
+     return best_move[0], best_move[1], count, elapsed_time
 
 
 def human_move(Board):
-     # check if any possible
-     human_move_possible = Board.any_legal_move(Board.opp, Board.player)
-     if not human_move_possible:
-          print "No possible move!"
-          return
-     
-     # get human move
      print "\nYour move, pick a row, column e.g. 0,2"
      row, col = input()
      row, col = int(row), int(col)
-     
-     # play if legal, else try again
-     if not Board.play_legal_move(row, col, Board.opp, Board.player): return human_move(Board)
-     Board.play_legal_move(row, col, Board.opp, Board.player, flip=True)
-
-     # print
-     Board.print_stats(Board.opp, row, col)
-     return
-
+     return row, col
 
 
 def play():
@@ -257,14 +241,14 @@ def play():
     print Board
 
     # CPU's initial move if black 
-    if cpuval=='B': cpu_move(Board)
+    if cpuval=='B': make_move(Board, cpuval, humanval)
      
     while( Board.game_end()==False ):
         # human move
-        human_move(Board)
+        make_move(Board, humanval, cpuval)
         
         # cpu move 
-        if not Board.game_end(): cpu_move(Board)
+        if not Board.game_end(): make_move(Board, cpuval, humanval)
 
     if(Board.winner()==' '): print "Cat game" 
     elif(Board.winner()==humanval): print "You Win!"
