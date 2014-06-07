@@ -170,18 +170,18 @@ class TeamA:
                 totalTiles = Wtiles + Btiles
                 if (totalTiles == 16):
                     if(Wtiles > Btiles):
-                        return True, 'W'
+                        return True, Wtiles, Btiles, 'W'
                     elif(Btiles > Wtiles):
-                        return True, 'B'
+                        return True, Wtiles, Btiles,'B'
                     elif(Btiles == Wtiles):
-                        return True, '0'
+                        return True, Wtiles, Btiles, '0'
                 else:
-                    return False, '0'
+                    return False, Wtiles, Btiles, '0'
 
 
 
 #minimax function with alpha beta pruning
-#def minimax(board, maximizingPlayer, pruning, alpha, beta, depth, count):
+def minimax(board, maximizingPlayer, pruning, alpha, beta, depth, count):
     #base case
     #return values are (payoff, (bestMove_i, bestMove_j), count)
     Gameover, winner = board.endGame()
@@ -192,6 +192,8 @@ class TeamA:
             return -1000, (-2, -2), count
         elif(winner == '0'):
             return 0, (-2, -2), count
+    else:
+        if(
 
     bestMove = (-1, -1)
     symbol = {True: 'W', False: 'B'} # maximizing player has 'X' and minimizing 'O'
