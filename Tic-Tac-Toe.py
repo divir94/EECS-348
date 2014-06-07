@@ -78,20 +78,54 @@ def minimax(board, maximizingPlayer, pruning, alpha, beta, depth, count):
     if maximizingPlayer: return alpha, bestMove, count
     return beta, bestMove, count
 
+def minimax(board, depth, maximizingPlayer):
+    #print board
+    if board.winner() == 'X': return 1, (-2,-2) # I guess the return move (-2,-2) doesn't matter
+    elif board.winner() == 'O': return -1, (-2,-2)
+    elif depth == 0 or board.full_board(): return 0, (-2,-2)
 
+    bestMove = (-1,-1)
+    if maximizingPlayer:
+        bestValue = float("-inf")
+        for i in range(3):
+            for j in range(3):
+                if board.get_square(i,j) == ' ':
+                    board.play_square(i,j,'X')
+                    val, (besti, bestj) = minimax(board, depth-1, False)
+                    # update bestValue 
+                    if val > bestValue:
+                        bestValue = val
+                        bestMove = (i,j)
+                    board.play_square(i,j,' ')
+        return bestValue, bestMove
+    else:
+        bestValue = float("inf")
+        for i in range(3):
+            for j in range(3):
+                if board.get_square(i,j) == ' ':
+                    board.play_square(i,j,'O')
+                    val, (besti, bestj) = minimax(board, depth-1, True)
+                    # update bestValue 
+                    if val < bestValue:
+                        bestValue = val
+                        bestMove = (i,j)
+                    board.play_square(i,j,' ')
+        return bestValue, bestMove
+    
 def makeMove(Board, depth, cpuval):
     print "CPU Move"
     start_time = time() # record time
-    bestValue, bestMove, count = minimax(Board, cpuval=='X', True, float("-Inf"), float("Inf"), depth, 0)
+    #bestValue, bestMove, count = minimax(Board, cpuval=='X', True, float("-Inf"), float("Inf"), depth, 0)
+    bestValue, bestMove = minimax(Board, depth, cpuval=='X')
     elapsed_time = time() - start_time
     Board.play_square(bestMove[0], bestMove[1], cpuval) # play move
-    print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
+    print "Number of nodes searched: %d \nTime taken: %.2f" % (0, elapsed_time)
 
 
 def play():
     Board = TicTacToeBoard()
-    humanval =  'O'
-    cpuval = 'X'
+    humanval =  'X'
+    cpuval = 'O'
     depth = 9 # Number of moves to look ahead
 
     if cpuval=='X':
