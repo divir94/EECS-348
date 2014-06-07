@@ -3,7 +3,7 @@ from time import time
 
 class TeamA:
      def __init__(self):
-          self.size = 4
+          self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
           mid = self.size/2
           self.board[mid][mid] = 'W'
@@ -34,7 +34,6 @@ class TeamA:
           print "Possible human moves ", self.get_moves_list(self.opp, self.player)
           print "Possible CPU moves", self.get_moves_list(self.player, self.opp)
           print "\nNet Score: %f \nParity: %f, Mobility: %f, Stability: %f\n" % (self.evaluate())
-          print "%s" % ('='*40)
                
      """ ======================== Legal move  ====================== """
 
@@ -218,6 +217,7 @@ def make_move(Board, player, opp):
      # print
      Board.print_stats(player, row, col)
      if player==Board.player: print "Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time)
+     print "%s" % ('='*40)
 
 def cpu_move(Board):
      start_time = time()
