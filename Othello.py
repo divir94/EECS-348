@@ -1,6 +1,10 @@
 from copy import deepcopy
 from time import time
 
+# timeout
+import signal
+from contextlib import contextmanager
+
 class TeamA:
      def __init__(self):
           self.size = 8
@@ -33,7 +37,7 @@ class TeamA:
           print self
           print "Possible human moves ", self.get_moves_list(self.opp, self.player)
           print "Possible CPU moves", self.get_moves_list(self.player, self.opp)
-          print "\nNet Score: %f \nParity: %f, Mobility: %f, Stability: %f\n" % (self.evaluate())
+          print "\nNet Score: %.1f \nParity: %.1f, Mobility: %.1f, Stability: %.1f\n" % (self.evaluate())
                
      """ ======================== Legal move  ====================== """
 
@@ -159,6 +163,24 @@ class TeamA:
 
 """ ========================= minimax and other functions ==================== """
 
+class TimeoutException(Exception): pass
+def timeout(fun, limit, *args ):
+   @contextmanager
+   def time_limit(seconds):
+       def signal_handler(signum, frame):
+           raise TimeoutException, "Timed out!"
+       signal.signal(signal.SIGALRM, signal_handler)
+       signal.alarm(seconds)
+       try:
+           yield
+       finally:
+           signal.alarm(0)
+   try:
+       with time_limit(limit):
+           return fun(*args)
+   except TimeoutException, msg:
+       return [None]*3
+
 def minimax(Board, maximizingPlayer, depth, count):
      # maximizing player has 'B' and minimizing 'W'
      if maximizingPlayer: player, opp = 'B', 'W'
@@ -221,7 +243,11 @@ def make_move(Board, player, opp):
 
 def cpu_move(Board):
      start_time = time()
-     best_score, best_move, count = minimax(Board, Board.player=='B', Board.depth, 0)
+     best_score, best_move, count = timeout(minimax, Board.time_limit, Board, Board.player=='B', Board.depth, 0)
+
+     # if timed out, get first legal move
+     if best_move==None: best_move, count = Board.get_moves_list(Board.player, Board.opp)[0], -1
+     
      elapsed_time = time() - start_time
      return best_move[0], best_move[1], count, elapsed_time
 
@@ -238,6 +264,7 @@ def play():
     humanval, cpuval = 'W', 'B'
     Board.player, Board.opp = cpuval, humanval
     Board.depth = 4 # Number of moves to look ahead
+    Board.time_limit = 5 # choose random move if timed out
     print Board
 
     # CPU's initial move if black 
