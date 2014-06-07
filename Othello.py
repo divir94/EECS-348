@@ -3,7 +3,7 @@ from time import time
 
 class TeamA:
      def __init__(self):
-          self.size = 6
+          self.size = 4
           self.board = [[' ']*self.size for i in range(self.size)]
           mid = self.size/2
           self.board[mid][mid] = 'W'
@@ -25,7 +25,17 @@ class TeamA:
                 s +=  str(self.get_square(i,j)) + '|'
             s += "\n   %s\n" % ('--'*self.size)
         return s
-     
+
+     def print_stats(self, player, row, col):
+          if player == self.player: name, player = "CPU moved", self.player
+          else: name, player = "Human moved", self.opp
+          print "%s %s '%s' to (%d, %d) %s" % ('='*10, name, player, row, col, '='*10)
+          print self
+          print "Possible human moves ", self.get_moves_list(self.opp, self.player)
+          print "Possible CPU moves", self.get_moves_list(self.player, self.opp)
+          print "\nNet Score: %f \nParity: %f, Mobility: %f, Stability: %f\n" % (self.evaluate())
+          print "%s" % ('='*40)
+               
      """ ======================== Legal move  ====================== """
 
      #Checks every direction from the position which is input via "col" and "row", to see if there is an opponent piece
@@ -112,9 +122,22 @@ class TeamA:
           # score
           score = parity/100 + mobility + 10*stability
           return score, parity, mobility, stability
+          
 
      """ ========================= Making moves ==================== """
-
+     
+     #returns the value of a square on the board
+     def get_square(self, row, col):
+          return self.board[row][col]
+     
+     #sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
+     #(dist) to be a given value ( player )
+     def flip_tiles(self, row, col, Dir, dist, player):
+          for i in range(dist):
+               self.board[row+ i*Dir[0]][col + i*Dir[1]] = player
+          self.count_pieces(self.player, self.opp)
+          return True
+     
      # Returns list of legal moves
      def get_moves_list(self, player, opp):
           moves_list = []
@@ -133,19 +156,7 @@ class TeamA:
           self.player_count = player_count
           self.opp_count = opp_count
           return
-     
-     #returns the value of a square on the board
-     def get_square(self, row, col):
-          return self.board[row][col]
-     
-     #sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
-     #(dist) to be a given value ( player )
-     def flip_tiles(self, row, col, Dir, dist, player):
-          for i in range(dist):
-               self.board[row+ i*Dir[0]][col + i*Dir[1]] = player
-          self.count_pieces(self.player, self.opp)
-          return True
-     
+
 
 def minimax(Board, maximizingPlayer, depth, count):
      # maximizing player has 'B' and minimizing 'W'
@@ -187,6 +198,8 @@ def minimax(Board, maximizingPlayer, depth, count):
            return best_score, best_move, count
 
 
+def make_move(player, opp): pass
+
 def cpu_move(Board):
      # record time
      start_time = time()
@@ -201,17 +214,16 @@ def cpu_move(Board):
      best_score, best_move, count = minimax(Board, Board.player=='B', Board.depth, 0)
      
      # play if legal, else try again
-     Board.play_legal_move(best_move[0], best_move[1], Board.player, Board.opp, flip=True)
+     row, col = best_move[0], best_move[1]
+     
+     if not Board.play_legal_move(row, col, Board.player, Board.opp): return cpu_move(Board)
+     Board.play_legal_move(row, col, Board.player, Board.opp, flip=True)
+     
      elapsed_time = time() - start_time
-
+     
      # print
-     print "%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", Board.player, best_move[0], best_move[1], '='*10)
-     print Board
-     print "Possible human moves ", Board.get_moves_list(Board.opp, Board.player)
-     print "Possible CPU moves", Board.get_moves_list(Board.player, Board.opp)
-     print "\nNet Score: %f \nParity: %f, Mobility: %f, Stability: %f\n" % (Board.evaluate())
      print "Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time)
-     print "%s" % ('='*40)
+     Board.print_stats(Board.player, row, col)
      return
 
 
@@ -232,12 +244,7 @@ def human_move(Board):
      Board.play_legal_move(row, col, Board.opp, Board.player, flip=True)
 
      # print
-     print "%s %s '%s' to (%d, %d) %s" % ('='*10, "Human moved", Board.opp, row, col, '='*10)
-     print Board
-     print "Possible human moves ", Board.get_moves_list(Board.opp, Board.player)
-     print "Possible CPU moves", Board.get_moves_list(Board.player, Board.opp)
-     print "\nNet Score: %f \nParity: %f, Mobility: %f, Stability: %f\n" % (Board.evaluate())
-     print "%s" % ('='*40)
+     Board.print_stats(Board.opp, row, col)
      return
 
 
@@ -246,7 +253,7 @@ def play():
     Board = TeamA()
     humanval, cpuval = 'W', 'B'
     Board.player, Board.opp = cpuval, humanval
-    Board.depth = 3 # Number of moves to look ahead
+    Board.depth = 4 # Number of moves to look ahead
     print Board
 
     # CPU's initial move if black 
