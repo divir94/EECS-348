@@ -37,7 +37,7 @@ class TeamA:
                return False
           
           if(player == opp):
-               print "player and opponent cannot be the same" 
+               print ("player and opponent cannot be the same") 
                return False
           
           legal = False
@@ -169,9 +169,9 @@ def makeMove(Board, depth, cpuval, humanval):
     start_time = time() # record time
     bestScore, bestMove, count = minimax(Board, cpuval=='B', depth, 0)
     elapsed_time = time() - start_time
-    print "CPU Move: %s, Score: %d" % (bestMove, bestScore)
+    print ("CPU Move: %s, Score: %d" % (bestMove, bestScore))
     Board.play_legal_move(bestMove[0], bestMove[1], cpuval, humanval, flip=True) # play move
-    print "Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time)
+    print ("Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time))
     return bestMove[0], bestMove[1]
 
 
@@ -181,44 +181,44 @@ def play():
     cpuval = 'B'
     Board.player, Board.opp = cpuval, humanval
     depth = 5 # Number of moves to look ahead
-    print Board
+    print (Board)
 
     # CPU's initial move if black 
     if cpuval=='B':
      row, col = makeMove(Board, depth, cpuval, humanval) 
-     print "%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10)
-     print Board
-     print Board.get_moves_list(humanval, cpuval)
+     print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
+     print (Board)
+     print (Board.get_moves_list(humanval, cpuval))
      
     while( Board.full_board()==False ):
         # human move
         human_move_possible = Board.any_legal_move(humanval, cpuval)
         # if any human move left
         if human_move_possible: 
-             print "\nYour move, pick a row, column e.g. 0,2"
+             print ("\nYour move, pick a row, column e.g. 0,2")
              row, col = input()
              row, col = int(row), int(col)
              if not Board.play_legal_move(row, col, humanval, cpuval): continue
              Board.play_legal_move(row, col, humanval, cpuval, flip=True)
-             print "%s %s '%s' to (%d, %d) %s" % ('='*10, "Human moved", humanval, row, col, '='*10)
-             print Board
-             print Board.get_moves_list(cpuval, humanval)
+             print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "Human moved", humanval, row, col, '='*10))
+             print (Board)
+             print (Board.get_moves_list(cpuval, humanval))
 
         # CPU move
         cpu_move_possible = Board.any_legal_move(cpuval, humanval)
         if cpu_move_possible:
              row, col = makeMove(Board, depth, cpuval, humanval) 
              #row, col = Board.make_move(cpuval, humanval)
-             print "%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10)
-             print Board
-             print Board.get_moves_list(humanval, cpuval)
+             print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
+             print (Board)
+             print (Board.get_moves_list(humanval, cpuval))
         # check if no move possible
         if Board.game_end(): break
 
-    print Board
-    if(Board.winner()==' '): print "Cat game" 
-    elif(Board.winner()==humanval): print "You Win!"
-    elif(Board.winner()==cpuval): print "CPU Wins!"
+    print (Board)
+    if(Board.winner()==' '): print ("Cat game" )
+    elif(Board.winner()==humanval): print ("You Win!")
+    elif(Board.winner()==cpuval): print ("CPU Wins!")
 
 def test():
     Board = TeamA()
@@ -229,14 +229,14 @@ def test():
     humanval = 'W'
     cpuval = 'B'
     Board.player, Board.opp = cpuval, humanval
-    print Board
-    print Board.get_moves_list(humanval, cpuval)
+    print (Board)
+    print (Board.get_moves_list(humanval, cpuval))
 
     #"""
     row, col = makeMove(Board, 4, cpuval, humanval) 
-    print "%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10)
-    print Board
-    print Board.get_moves_list(cpuval, humanval)
+    print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
+    print (Board)
+    print (Board.get_moves_list(cpuval, humanval))
     
     """
     vals = ['B', 'W']
