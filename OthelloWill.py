@@ -1,11 +1,15 @@
 from copy import deepcopy
 from time import time
 
+# timeout
+import signal
+from contextlib import contextmanager
+
 class TeamA:
      def __init__(self):
-          self.size = 4
+          self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
-          mid = self.size/2
+          mid = 4#self.size/2
           self.board[mid][mid] = 'W'
           self.board[mid-1][mid] = 'B'
           self.board[mid-1][mid-1] = 'W'
@@ -25,7 +29,16 @@ class TeamA:
                 s +=  str(self.get_square(i,j)) + '|'
             s += "\n   %s\n" % ('--'*self.size)
         return s
-     
+
+     def print_stats(self, player, row, col):
+          if player == self.player: name, player = "CPU moved", self.player
+          else: name, player = "Human moved", self.opp
+          print ("%s %s '%s' to (%d, %d) %s" % ('='*10, name, player, row, col, '='*10))
+          print (self)
+          print ("Possible human moves ", self.get_moves_list(self.opp, self.player))
+          print ("Possible CPU moves", self.get_moves_list(self.player, self.opp))
+          print ("\nNet Score: %.1f \nParity: %.1f, Mobility: %.1f, Stability: %.1f\n" % (self.evaluate()))
+               
      """ ======================== Legal move  ====================== """
 
      #Checks every direction from the position which is input via "col" and "row", to see if there is an opponent piece
@@ -83,10 +96,51 @@ class TeamA:
           elif self.player_count < self.opp_count: return self.opp
           return ' '
 
-     def evaluate(self): return self.player_count - self.opp_count
+     def evaluate(self):
+          # check game end
+          if self.game_end():
+               if self.winner() == self.player: return float("Inf"), -1, -1, -1
+               elif self.winner() == self.opp: return float("-Inf"), -1, -1, -1
+               else: return 0, -1, -1, -1
+
+          # coin parity
+          parity = 100 * ( float(self.player_count - self.opp_count) / (self.player_count + self.opp_count))
+
+          # mobility
+          num_player_moves = len(self.get_moves_list(self.player, self.opp))
+          num_opp_moves = len(self.get_moves_list(self.opp, self.player))
+          mobility = 100 * ( float(num_player_moves - num_opp_moves) / (num_player_moves + num_opp_moves) )
+
+          # corner
+          corners = [(0,0), (0, self.size-1), (self.size-1, 0), (self.size-1, self.size-1)]
+          player_corners = opp_corners = 0
+          for corner in corners:
+               if self.get_square(corner[0], corner[1]) == self.player: player_corners += 1
+               elif self.get_square(corner[0], corner[1]) == self.opp: opp_corners += 1
+               
+          if ( player_corners + opp_corners !=0 ):
+               stability = 100 * ( float(player_corners - opp_corners) / (player_corners + opp_corners) )
+          else: stability = 0
+          
+          # score
+          score = parity/100 + mobility + 10*stability
+          return score, parity, mobility, stability
+          
 
      """ ========================= Making moves ==================== """
-
+     
+     #returns the value of a square on the board
+     def get_square(self, row, col):
+          return self.board[row][col]
+     
+     #sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
+     #(dist) to be a given value ( player )
+     def flip_tiles(self, row, col, Dir, dist, player):
+          for i in range(dist):
+               self.board[row+ i*Dir[0]][col + i*Dir[1]] = player
+          self.count_pieces(self.player, self.opp)
+          return True
+     
      # Returns list of legal moves
      def get_moves_list(self, player, opp):
           moves_list = []
@@ -105,56 +159,61 @@ class TeamA:
           self.player_count = player_count
           self.opp_count = opp_count
           return
-     
-     #returns the value of a square on the board
-     def get_square(self, row, col):
-          return self.board[row][col]
-     
-     #sets all tiles along a given direction (Dir) from a given starting point (col and row) for a given distance
-     #(dist) to be a given value ( player )
-     def flip_tiles(self, row, col, Dir, dist, player):
-          for i in range(dist):
-               self.board[row+ i*Dir[0]][col + i*Dir[1]] = player
-          self.count_pieces(self.player, self.opp)
-          return True
-     
-     #Search the game board for a legal move, and play the first one it finds
-     def make_move(self, player, opp, flip=True):
-          for row in range(self.size):
-               for col in range(self.size):
-                    if self.play_legal_move(row, col, player, opp, flip): return (row,col)
-          return (-1,-1)
 
+
+""" ========================= minimax and other functions ==================== """
+
+class TimeoutException(Exception): pass
+def timeout(fun, limit, *args ):
+   @contextmanager
+   def time_limit(seconds):
+       def signal_handler(signum, frame):
+           raise TimeoutException("Timed out!")
+       signal.signal(signal.SIGALRM, signal_handler)
+       signal.alarm(seconds)
+       try:
+           yield
+       finally:
+           signal.alarm(0)
+   try:
+       with time_limit(limit):
+           return fun(*args)
+   except TimeoutException(msg):
+       return [None]*3
 
 def minimax(Board, maximizingPlayer, depth, count):
-     symbol = {True: 'B', False: 'W'} # maximizing player has 'B' and minimizing 'W'
-     player = symbol[maximizingPlayer]
-     opp = symbol[not maximizingPlayer]
+     # maximizing player has 'B' and minimizing 'W'
+     if maximizingPlayer: player, opp = 'B', 'W'
+     else: player, opp = 'W', 'B'
+     
      moves_list = Board.get_moves_list(player, opp)
      best_move = (-1,-1)
-    
+
+     # base case
      if ( depth==0 or moves_list == [] ):
-         best_score = Board.evaluate()
+         best_score, parity, mobility, stability = Board.evaluate()
          best_move = (-1, -1)
          return best_score, best_move, count
-       
+
+     # maximizing player
      if maximizingPlayer:
            best_score = float("-inf")
            for move in moves_list:
                 new_board = deepcopy(Board)
                 new_board.play_legal_move(move[0], move[1], player, opp, flip=True)
-                the_score, the_move, count = minimax(new_board, not maximizingPlayer, depth-1, count+1)
+                the_score, the_move, count = minimax(new_board, False, depth-1, count+1)
                 best_score = max(best_score, the_score)
                 if (the_score == best_score):
                     best_move = move
 
            return best_score, best_move, count
+     # minimzing player
      else:
            best_score = float("inf")
            for move in moves_list:
                 new_board = deepcopy(Board)
                 new_board.play_legal_move(move[0], move[1], player, opp, flip=True)
-                the_score, the_move, count = minimax(new_board, not maximizingPlayer, depth-1, count+1)
+                the_score, the_move, count = minimax(new_board, True, depth-1, count+1)
                 best_score = min(best_score, the_score)
                 if (the_score == best_score):
                     best_move = move
@@ -162,95 +221,66 @@ def minimax(Board, maximizingPlayer, depth, count):
            return best_score, best_move, count
 
 
+def make_move(Board, player, opp):
+     # check if any possible
+     move_possible = Board.any_legal_move(player, opp)
+     if not move_possible:
+          print ("No possible move!")
+          return
+
+     # get move
+     if player==Board.player: row, col, count, elapsed_time = cpu_move(Board)
+     else: row, col = human_move(Board)
+
+     # play if legal, else try again
+     if not Board.play_legal_move(row, col, player, opp): return make_move(Board, player, opp)
+     Board.play_legal_move(row, col, player, opp, flip=True)
+
+     # print
+     Board.print_stats(player, row, col)
+     if player==Board.player: print ("Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time))
+     print ("%s" % ('='*40))
+
+def cpu_move(Board):
+     start_time = time()
+     best_score, best_move, count = timeout(minimax, Board.time_limit, Board, Board.player=='B', Board.depth, 0)
+
+     # if timed out, get first legal move
+     if best_move==None: best_move, count = Board.get_moves_list(Board.player, Board.opp)[0], -1
+     
+     elapsed_time = time() - start_time
+     return best_move[0], best_move[1], count, elapsed_time
 
 
-
-def makeMove(Board, depth, cpuval, humanval):
-    start_time = time() # record time
-    bestScore, bestMove, count = minimax(Board, cpuval=='B', depth, 0)
-    elapsed_time = time() - start_time
-    print ("CPU Move: %s, Score: %d" % (bestMove, bestScore))
-    Board.play_legal_move(bestMove[0], bestMove[1], cpuval, humanval, flip=True) # play move
-    print ("Number of nodes searched: %d \nTime taken: %.2f" % (count, elapsed_time))
-    return bestMove[0], bestMove[1]
+def human_move(Board):
+     print ("\nYour move, pick a row, column e.g. 0,2")
+     row, col = input()
+     row, col = int(row), int(col)
+     return row, col
 
 
 def play():
     Board = TeamA()
-    humanval = 'W'
-    cpuval = 'B'
+    humanval, cpuval = 'W', 'B'
     Board.player, Board.opp = cpuval, humanval
-    depth = 5 # Number of moves to look ahead
+    Board.depth = 4 # Number of moves to look ahead
+    Board.time_limit = 5 # choose random move if timed out
     print (Board)
 
     # CPU's initial move if black 
-    if cpuval=='B':
-     row, col = makeMove(Board, depth, cpuval, humanval) 
-     print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
-     print (Board)
-     print (Board.get_moves_list(humanval, cpuval))
+    if cpuval=='B': make_move(Board, cpuval, humanval)
      
-    while( Board.full_board()==False ):
+    while( Board.game_end()==False ):
         # human move
-        human_move_possible = Board.any_legal_move(humanval, cpuval)
-        # if any human move left
-        if human_move_possible: 
-             print ("\nYour move, pick a row, column e.g. 0,2")
-             row, col = input()
-             row, col = int(row), int(col)
-             if not Board.play_legal_move(row, col, humanval, cpuval): continue
-             Board.play_legal_move(row, col, humanval, cpuval, flip=True)
-             print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "Human moved", humanval, row, col, '='*10))
-             print (Board)
-             print (Board.get_moves_list(cpuval, humanval))
+        make_move(Board, humanval, cpuval)
+        
+        # cpu move 
+        if not Board.game_end(): make_move(Board, cpuval, humanval)
 
-        # CPU move
-        cpu_move_possible = Board.any_legal_move(cpuval, humanval)
-        if cpu_move_possible:
-             row, col = makeMove(Board, depth, cpuval, humanval) 
-             #row, col = Board.make_move(cpuval, humanval)
-             print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
-             print (Board)
-             print (Board.get_moves_list(humanval, cpuval))
-        # check if no move possible
-        if Board.game_end(): break
-
-    print (Board)
-    if(Board.winner()==' '): print ("Cat game" )
+    if(Board.winner()==' '): print ("Cat game") 
     elif(Board.winner()==humanval): print ("You Win!")
     elif(Board.winner()==cpuval): print ("CPU Wins!")
 
-def test():
-    Board = TeamA()
-    Board.board = [['B','W',' ',' '], \
-                   ['B','W','W',' '], \
-                   ['B','W','B',' '], \
-                   ['W','W','W','B']]                  
-    humanval = 'W'
-    cpuval = 'B'
-    Board.player, Board.opp = cpuval, humanval
-    print (Board)
-    print (Board.get_moves_list(humanval, cpuval))
-
-    #"""
-    row, col = makeMove(Board, 4, cpuval, humanval) 
-    print ("%s %s '%s' to (%d, %d) %s" % ('='*10, "CPU moved", cpuval, row, col, '='*10))
-    print (Board)
-    print (Board.get_moves_list(cpuval, humanval))
-    
-    """
-    vals = ['B', 'W']
-    moves = [(0,2),(0,3)]
-    i=0
-    for move in moves:
-         player, opp = vals[i%2], vals[(i+1)%2]
-         i += 1
-         Board.play_legal_move(move[0], move[1], player, opp, flip=True)
-         print Board
-         print Board.get_moves_list(opp, player)
-         if Board.game_end(): print "Winner: %s" % Board.winner()
-    """
-    
-def main(): test()
+def main(): play()
 
 if __name__ == "__main__": main()
