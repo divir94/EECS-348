@@ -18,7 +18,7 @@ class DivirB:
           # a list of unit vectors (row, col)
           self.directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
           self.player, self.opp = 'B', 'W'
-          self.depth = 2 # Number of moves to look ahead
+          self.depth = 3 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
      
      #Prints the board
