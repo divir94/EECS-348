@@ -169,7 +169,7 @@ class DivirA:
           if (row,col) != (-1,-1): self.play_legal_move(row,col, opp, player, flip=True)
 
           # Determine best move and and return value to Matchmaker
-          row, col = make_move(self, player, opp, debug=False, matchmaker=True)
+          row, col = make_move(self, player, opp, debug=True, matchmaker=True)
           if row == -1: print( "%s No Possible Move! %s" % ('='*10, '='*10) )
           return row, col
           
@@ -263,7 +263,8 @@ def make_move(Board, player, opp, debug=True, matchmaker=False):
 
 def cpu_move(Board):
      start_time = time()
-     best_score, best_move, count = timeout(minimax, Board.time_limit, Board, True, Board.depth, 0)
+     #best_score, best_move, count = timeout(minimax, Board.time_limit, Board, True, Board.depth, 0)
+     best_score, best_move, count = minimax(Board, True, Board.depth, 0)
 
      # if timed out, get first legal move
      if best_move==None: best_move, count = Board.get_moves_list(Board.player, Board.opp)[0], -1
