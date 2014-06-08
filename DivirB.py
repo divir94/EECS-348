@@ -267,7 +267,7 @@ def cpu_move(Board):
      num_pieces = Board.player_count + Board.opp_count
      if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
      else: depth = Board.depth
-     print("%s Using depth: %d %s" % ('='*10, depth, '='*10) )
+     print("%s Player B using depth: %d %s" % ('='*10, depth, '='*10) )
 
      # get a quick low depth move
      start_time = time()

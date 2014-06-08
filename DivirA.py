@@ -18,6 +18,7 @@ class DivirA:
           # a list of unit vectors (row, col)
           self.directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
           self.player, self.opp = 'B', 'W'
+          self.low_depth = 2
           self.depth = 2 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
      
@@ -262,12 +263,25 @@ def make_move(Board, player, opp, debug=True, matchmaker=False):
      return row, col
 
 def cpu_move(Board):
-     start_time = time()
-     #best_score, best_move, count = timeout(minimax, Board.time_limit, Board, True, Board.depth, 0)
-     best_score, best_move, count = minimax(Board, True, Board.depth, 0)
+     # adjust depth according to game state
+     num_pieces = Board.player_count + Board.opp_count
+     if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
+     else: depth = Board.depth
+     print("%s Player A using depth: %d %s" % ('='*10, depth, '='*10) )
 
-     # if timed out, get first legal move
-     if best_move==None: best_move, count = Board.get_moves_list(Board.player, Board.opp)[0], -1
+     # get a quick low depth move
+     start_time = time()
+     low_score, low_move, count = minimax(Board, True, Board.low_depth, 0)
+     elapsed_time = time() - start_time + 0.1
+
+     # use remining time for a deeper search
+     start_time = time()
+     best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0)
+
+     # if timed out, use low depth move
+     if best_move==None:
+          print("%s Using low depth move %s" % ('='*10, '='*10) )
+          best_score, best_move = low_score, low_move
      
      elapsed_time = time() - start_time
      return best_move[0], best_move[1], count, elapsed_time
