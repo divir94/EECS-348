@@ -169,7 +169,7 @@ class DivirA:
           if (row,col) != (-1,-1): self.play_legal_move(row,col, opp, player, flip=True)
 
           # Determine best move and and return value to Matchmaker
-          row, col = make_move(self, player, opp, debug=True, matchmaker=True)
+          row, col = make_move(self, player, opp, debug=False, matchmaker=True)
           if row == -1: print( "%s No Possible Move! %s" % ('='*10, '='*10) )
           return row, col
           
