@@ -5,11 +5,11 @@ from time import time
 import signal
 from contextlib import contextmanager
 
-class TeamA:
+class DivirB:
      def __init__(self):
-          self.size = 4
+          self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
-          mid = self.size/2
+          mid = int(self.size/2)
           self.board[mid][mid] = 'W'
           self.board[mid-1][mid] = 'B'
           self.board[mid-1][mid-1] = 'W'
@@ -17,14 +17,16 @@ class TeamA:
           self.player_count = self.opp_count = 2
           # a list of unit vectors (row, col)
           self.directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+          self.player, self.opp = 'B', 'W'
+          self.depth = 2 # Number of moves to look ahead
+          self.time_limit = 15 # choose random move if timed out
      
      #Prints the board
      def __repr__(self):
-        s = "%s count: %s\n%s count: %s\n\n   " % (self.player, self.player_count, self.opp, self.opp_count)
-        s += " ".join([str(i) for i in range(self.size)])
+        s = "   " + " ".join([str(i) for i in range(1,self.size+1)])
         s += "\n   %s\n" % ('--'*self.size)
         for i in range(self.size):
-            s += str(i) + ' |'
+            s += str(i+1) + ' |'
             for j in range(self.size):
                 s +=  str(self.get_square(i,j)) + '|'
             s += "\n   %s\n" % ('--'*self.size)
@@ -33,11 +35,12 @@ class TeamA:
      def print_stats(self, player, row, col):
           if player == self.player: name, player = "CPU moved", self.player
           else: name, player = "Human moved", self.opp
-          print "%s %s '%s' to (%d, %d) %s" % ('='*10, name, player, row, col, '='*10)
-          print self
-          print "Possible human moves ", self.get_moves_list(self.opp, self.player)
-          print "Possible CPU moves", self.get_moves_list(self.player, self.opp)
-          print "\nNet Score: %.1f \nParity: %.1f, Mobility: %.1f, Stability: %.1f\n" % (self.evaluate())
+          print("%s %s '%s' to (%d, %d) %s" % ('='*10, name, player, row+1, col+1, '='*10) )
+          print("\n%s count: %s\n%s count: %s\n" % (self.player, self.player_count, self.opp, self.opp_count))
+          print( self )
+          print("Possible human moves ", self.get_moves_list(self.opp, self.player) )
+          print("Possible CPU moves", self.get_moves_list(self.player, self.opp) )
+          print("\nNet Score: %.1f \nParity: %.1f, Mobility: %.1f, Stability: %.1f\n" % (self.evaluate()) )
                
      """ ======================== Legal move  ====================== """
 
@@ -50,7 +53,7 @@ class TeamA:
                return False
           
           if(player == opp):
-               print "player and opponent cannot be the same" 
+               print("player and opponent cannot be the same")
                return False
           
           legal = False
@@ -160,6 +163,18 @@ class TeamA:
           self.opp_count = opp_count
           return
 
+     def play_square(self, row, col, player, opp):
+          self.player, self.opp = player, opp
+          # Place a piece of the opponent's color at (row,col)
+          if (row,col) != (-1,-1): self.play_legal_move(row,col, opp, player, flip=True)
+
+          # Determine best move and and return value to Matchmaker
+          row, col = make_move(self, player, opp, debug=False, matchmaker=True)
+          if row == -1: print( "%s No Possible Move! %s" % ('='*10, '='*10) )
+          return row, col
+          
+          
+
 
 """ ========================= minimax and other functions ==================== """
 
@@ -168,7 +183,7 @@ def timeout(fun, limit, *args ):
    @contextmanager
    def time_limit(seconds):
        def signal_handler(signum, frame):
-           raise TimeoutException, "Timed out!"
+           raise TimeoutException
        signal.signal(signal.SIGALRM, signal_handler)
        signal.alarm(seconds)
        try:
@@ -178,13 +193,13 @@ def timeout(fun, limit, *args ):
    try:
        with time_limit(limit):
            return fun(*args)
-   except TimeoutException, msg:
+   except TimeoutException:
        return [None]*3
 
 def minimax(Board, maximizingPlayer, depth, count):
      # maximizing player has 'B' and minimizing 'W'
-     if maximizingPlayer: player, opp = 'B', 'W'
-     else: player, opp = 'W', 'B'
+     if maximizingPlayer: player, opp = Board.player, Board.opp
+     else: player, opp = Board.opp, Board.player
      
      moves_list = Board.get_moves_list(player, opp)
      best_move = (-1,-1)
@@ -221,29 +236,34 @@ def minimax(Board, maximizingPlayer, depth, count):
            return best_score, best_move, count
 
 
-def make_move(Board, player, opp):
+def make_move(Board, player, opp, debug=True, matchmaker=False):
      # check if any possible
      move_possible = Board.any_legal_move(player, opp)
      if not move_possible:
-          print "No possible move!"
-          return
-
+          print("No possible move!")
+          return (-1, -1)
+     
      # get move
-     if player==Board.player: row, col, count, elapsed_time = cpu_move(Board)
-     else: row, col = human_move(Board)
+     if matchmaker: row, col, count, elapsed_time = cpu_move(Board)
+     elif player==Board.player: row, col, count, elapsed_time = cpu_move(Board)
+     else:
+          print(matchmaker)
+          row, col = human_move(Board)
 
      # play if legal, else try again
-     if not Board.play_legal_move(row, col, player, opp): return make_move(Board, player, opp)
-     Board.play_legal_move(row, col, player, opp, flip=True)
+     if not Board.play_legal_move(row, col, player, opp, flip=True): return (-1, -1)
 
      # print
-     Board.print_stats(player, row, col)
-     if player==Board.player: print "Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time)
-     print "%s" % ('='*40)
+     if debug: 
+          print()
+          Board.print_stats(player, row, col)
+          if player==Board.player: print("Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time))
+          print("%s" % ('='*40))
+     return row, col
 
 def cpu_move(Board):
      start_time = time()
-     best_score, best_move, count = timeout(minimax, Board.time_limit, Board, Board.player=='B', Board.depth, 0)
+     best_score, best_move, count = timeout(minimax, Board.time_limit, Board, True, Board.depth, 0)
 
      # if timed out, get first legal move
      if best_move==None: best_move, count = Board.get_moves_list(Board.player, Board.opp)[0], -1
@@ -253,34 +273,31 @@ def cpu_move(Board):
 
 
 def human_move(Board):
-     print "\nYour move, pick a row, column e.g. 0,2"
-     row, col = input()
-     row, col = int(row), int(col)
+     print("\nYour move, pick a row, column e.g. 0,2")
+     move = input().split(',')
+     row, col = int(move[0])-1, int(move[1])-1
      return row, col
 
 
 def play():
-    Board = TeamA()
-    humanval, cpuval = 'W', 'B'
-    Board.player, Board.opp = cpuval, humanval
-    Board.depth = 7 # Number of moves to look ahead
-    Board.time_limit = 5 # choose random move if timed out
-    print Board
+    Board = DivirB()
+    print(Board)
 
     # CPU's initial move if black 
-    if cpuval=='B': make_move(Board, cpuval, humanval)
+    if Board.player=='B': make_move(Board, Board.player, Board.opp)
      
     while( Board.game_end()==False ):
         # human move
-        make_move(Board, humanval, cpuval)
+        make_move(Board, Board.opp, Board.player)
         
         # cpu move 
-        if not Board.game_end(): make_move(Board, cpuval, humanval)
+        if not Board.game_end(): make_move(Board, Board.player, Board.opp)
 
-    if(Board.winner()==' '): print "Cat game" 
-    elif(Board.winner()==humanval): print "You Win!"
-    elif(Board.winner()==cpuval): print "CPU Wins!"
+    if(Board.winner()==' '): print("Cat game") 
+    elif(Board.winner()==Board.opp): print("You Win!")
+    elif(Board.winner()==Board.player): print("CPU Wins!")
 
-def main(): play()
 
-if __name__ == "__main__": main()
+#def main(): play()
+
+#if __name__ == "__main__": main()
