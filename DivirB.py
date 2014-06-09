@@ -19,7 +19,7 @@ class DivirB:
           self.directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
           self.player, self.opp = 'B', 'W'
           self.low_depth = 2
-          self.depth = 3 # Number of moves to look ahead
+          self.depth = 2 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
      
      #Prints the board
@@ -271,12 +271,15 @@ def cpu_move(Board):
 
      # get a quick low depth move
      start_time = time()
+     
      low_score, low_move, count = minimax(Board, True, Board.low_depth, 0)
+     #low_score, low_move, count = minimax(Board, True, Board.low_depth, 0, float("-Inf"), float("Inf"))
      elapsed_time = time() - start_time + 0.1
 
      # use remining time for a deeper search
      start_time = time()
      best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0)
+     #best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0, float("-Inf"), float("Inf"))
 
      # if timed out, use low depth move
      if best_move==None:

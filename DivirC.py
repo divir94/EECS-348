@@ -5,7 +5,7 @@ from time import time
 import signal
 from contextlib import contextmanager
 
-class DivirA:
+class DivirC:
      def __init__(self):
           self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
@@ -22,7 +22,7 @@ class DivirA:
           self.depth = 2 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
           self.debug = False
-
+     
      #Prints the board
      def __repr__(self):
         s = "   " + " ".join([str(i) for i in range(1,self.size+1)])
@@ -171,7 +171,7 @@ class DivirA:
           if (row,col) != (-1,-1): self.play_legal_move(row,col, opp, player, flip=True)
 
           # Determine best move and and return value to Matchmaker
-          row, col = make_move(self, player, opp, matchmaker=True)
+          row,  col = make_move(self, player, opp, matchmaker=True)
           if row == -1 and bool(self.get_moves_list(player, opp)):
                row, col = self.get_moves_list(player, opp)[0][0], self.get_moves_list(player, opp)[0][1]
                self.play_legal_move(row, col, player, opp, flip=True)
@@ -285,7 +285,7 @@ def alphabeta(Board, maximizingPlayer, depth, count, alpha, beta):
 
 def make_move(Board, player, opp, matchmaker=False):
      # prune
-     prune = True
+     prune = False
      
      # check if any possible
      move_possible = Board.any_legal_move(player, opp)
@@ -302,7 +302,7 @@ def make_move(Board, player, opp, matchmaker=False):
      if not Board.play_legal_move(row, col, player, opp, flip=True): return (-1, -1)
 
      # print
-     if Board.debug: 
+     if Board.debug:
           print()
           Board.print_stats(player, row, col)
           if player==Board.player: print("Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time))
@@ -314,7 +314,7 @@ def cpu_move(Board, prune):
      num_pieces = Board.player_count + Board.opp_count
      if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
      else: depth = Board.depth
-     print("%s Player A using depth: %d %s" % ('='*10, depth, '='*10) )
+     print("%s Player C using depth: %d %s" % ('='*10, depth, '='*10) )
 
      # get a quick low depth move
      start_time = time()

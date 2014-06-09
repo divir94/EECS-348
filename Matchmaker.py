@@ -235,7 +235,7 @@ def main():
 		# If player has returned an illegal move, player loses
 		elif (not mm.islegal(move[0], move[1], playerColor, oppColor)):
 			print("%s has entered an illegal move." % teamNames[curPlayerID])
-			print(move[0], move[1])
+			print(move[0]+1, move[1]+1)
 			print("%s (%s) is the winner." % (teamNames[1-curPlayerID], oppColor))
 			return
 		
