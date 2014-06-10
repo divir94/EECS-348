@@ -21,7 +21,7 @@ class DivirA:
           self.low_depth = 2
           self.depth = 2 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
-          self.debug = False
+          self.debug = True
 
      #Prints the board
      def __repr__(self):
