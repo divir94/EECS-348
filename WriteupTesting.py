@@ -5,7 +5,7 @@ from time import time
 import signal
 from contextlib import contextmanager
 
-class DivirA:
+class WriteupTesting:
      def __init__(self):
           self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
@@ -21,7 +21,7 @@ class DivirA:
           self.low_depth = 2
           self.depth = 4 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
-          self.debug = True
+          self.debug = False
 
      #Prints the board
      def __repr__(self):
@@ -212,6 +212,8 @@ def minimax(Board, maximizingPlayer, depth, count):
      if ( depth==0 or moves_list == [] ):
          best_score, parity, mobility, stability = Board.evaluate()
          best_move = (-1, -1)
+         print ("==========RESULTS==========")
+         print ("Score = " + str(best_score) + ", parity = " + str(parity )+ ", mobility = " + str(mobility) + ", stability = " + str(stability))
          return best_score, best_move, count
 
      # maximizing player
@@ -252,6 +254,8 @@ def alphabeta(Board, maximizingPlayer, depth, count, alpha, beta):
      if ( depth==0 or moves_list == [] ):
          best_score, parity, mobility, stability = Board.evaluate()
          best_move = (-1, -1)
+         print ("==========RESULTS==========")
+         print ("Score = " + str(best_score) + ", parity = " + str(parity )+ ", mobility = " + str(mobility) + ", stability = " + str(stability))
          return best_score, best_move, count
 
      # maximizing player
@@ -325,6 +329,7 @@ def cpu_move(Board, prune):
      # use remining time for a deeper search
      start_time = time()
      if prune: best_score, best_move, count = timeout(alphabeta, int(Board.time_limit - elapsed_time), Board, True, depth, 0, float("-Inf"), float("Inf"))
+         
      else: best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0)
      
 
@@ -334,6 +339,7 @@ def cpu_move(Board, prune):
           best_score, best_move = low_score, low_move
      
      elapsed_time = time() - start_time
+     print ("Best score = " + str(best_score))
      return best_move[0], best_move[1], count, elapsed_time
 
 
@@ -345,7 +351,7 @@ def human_move(Board):
 
 
 def play():
-    Board = DivirA()
+    Board = WriteupTesting()
     print(Board)
 
     # CPU's initial move if black 

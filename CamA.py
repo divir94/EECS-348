@@ -5,7 +5,7 @@ from time import time
 import signal
 from contextlib import contextmanager
 
-class DivirA:
+class CamA:
      def __init__(self):
           self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
@@ -21,7 +21,7 @@ class DivirA:
           self.low_depth = 2
           self.depth = 4 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
-          self.debug = True
+          self.debug = False
 
      #Prints the board
      def __repr__(self):
@@ -310,11 +310,20 @@ def make_move(Board, player, opp, matchmaker=False):
      return row, col
 
 def cpu_move(Board, prune):
-     # adjust depth according to game state
-     num_pieces = Board.player_count + Board.opp_count
-     if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
+     #adjust depth according to number of possible moves
+     moves_list = Board.get_moves_list(Board.player, Board.opp)
+     num_moves = len(moves_list)
+     if (num_moves < 7): depth = 5
+     elif (num_moves > 12): depth = 3
      else: depth = Board.depth
-     print("%s Player A using depth: %d %s" % ('='*10, depth, '='*10) )
+     print("num moves possible: ", num_moves)
+
+     # adjust depth according to game state
+#     num_pieces = Board.player_count + Board.opp_count
+#     if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
+#     else: depth = Board.depth
+     print("%s Player Cam using depth: %d %s" % ('='*10, depth, '='*10) )
+     
 
      # get a quick low depth move
      start_time = time()
@@ -345,7 +354,7 @@ def human_move(Board):
 
 
 def play():
-    Board = DivirA()
+    Board = CamA()
     print(Board)
 
     # CPU's initial move if black 
