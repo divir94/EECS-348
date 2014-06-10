@@ -19,7 +19,7 @@ class DivirC:
           self.player, self.opp = 'B', 'W'
           self.player_count = self.opp_count = 2
           self.low_depth = 2
-          self.depth = 2 # Number of moves to look ahead
+          self.depth = 3 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
           self.debug = False
      
@@ -285,7 +285,7 @@ def alphabeta(Board, maximizingPlayer, depth, count, alpha, beta):
 
 def make_move(Board, player, opp, matchmaker=False):
      # prune
-     prune = False
+     prune = True
      
      # check if any possible
      move_possible = Board.any_legal_move(player, opp)
@@ -345,7 +345,7 @@ def human_move(Board):
 
 
 def play():
-    Board = DivirB()
+    Board = DivirC()
     print(Board)
 
     # CPU's initial move if black 
