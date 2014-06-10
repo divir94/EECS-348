@@ -5,7 +5,7 @@ from time import time
 import signal
 from contextlib import contextmanager
 
-class DivirC:
+class Gupta_Chou_MacArthur_Almakhdhub:
      def __init__(self):
           self.size = 8
           self.board = [[' ']*self.size for i in range(self.size)]
@@ -345,7 +345,7 @@ def human_move(Board):
 
 
 def play():
-    Board = DivirC()
+    Board = Gupta_Chou_MacArthur_Almakhdhub()
     print(Board)
 
     # CPU's initial move if black 
