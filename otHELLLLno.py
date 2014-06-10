@@ -14,13 +14,14 @@ class otHELLLLno:
           self.board[mid-1][mid] = 'B'
           self.board[mid-1][mid-1] = 'W'
           self.board[mid][mid-1] = 'B'
-          self.player_count = self.opp_count = 2
-          # a list of unit vectors (row, col)
           self.directions = [(-1,-1), (-1,0), (-1,1), (0,-1), (0,1), (1,-1), (1,0), (1,1)]
+
           self.player, self.opp = 'B', 'W'
+          self.player_count = self.opp_count = 2
           self.low_depth = 2
-          self.depth = 3 # Number of moves to look ahead
+          self.depth = 4 # Number of moves to look ahead
           self.time_limit = 15 # choose random move if timed out
+          self.debug = False
      
      #Prints the board
      def __repr__(self):
@@ -38,7 +39,7 @@ class otHELLLLno:
           else: name, player = "Human moved", self.opp
           print("%s %s '%s' to (%d, %d) %s" % ('='*10, name, player, row+1, col+1, '='*10) )
           print("\n%s count: %s\n%s count: %s\n" % (self.player, self.player_count, self.opp, self.opp_count))
-          print( self )
+          #print( self )
           print("Possible human moves ", self.get_moves_list(self.opp, self.player) )
           print("Possible CPU moves", self.get_moves_list(self.player, self.opp) )
           print("\nNet Score: %.1f \nParity: %.1f, Mobility: %.1f, Stability: %.1f\n" % (self.evaluate()) )
@@ -170,8 +171,10 @@ class otHELLLLno:
           if (row,col) != (-1,-1): self.play_legal_move(row,col, opp, player, flip=True)
 
           # Determine best move and and return value to Matchmaker
-          row, col = make_move(self, player, opp, debug=False, matchmaker=True)
-          if row == -1: print( "%s No Possible Move! %s" % ('='*10, '='*10) )
+          row,  col = make_move(self, player, opp, matchmaker=True)
+          if row == -1 and bool(self.get_moves_list(player, opp)):
+               row, col = self.get_moves_list(player, opp)[0][0], self.get_moves_list(player, opp)[0][1]
+               self.play_legal_move(row, col, player, opp, flip=True)
           return row, col
           
           
@@ -236,8 +239,54 @@ def minimax(Board, maximizingPlayer, depth, count):
 
            return best_score, best_move, count
 
+         
+def alphabeta(Board, maximizingPlayer, depth, count, alpha, beta):
+     # maximizing player has 'B' and minimizing 'W'
+     if maximizingPlayer: player, opp = Board.player, Board.opp
+     else: player, opp = Board.opp, Board.player
+     
+     moves_list = Board.get_moves_list(player, opp)
+     best_move = (-1,-1)
 
-def make_move(Board, player, opp, debug=True, matchmaker=False):
+     # base case
+     if ( depth==0 or moves_list == [] ):
+         best_score, parity, mobility, stability = Board.evaluate()
+         best_move = (-1, -1)
+         return best_score, best_move, count
+
+     # maximizing player
+     if maximizingPlayer:
+           best_score = float("-inf")
+           for move in moves_list:
+                new_board = deepcopy(Board)
+                new_board.play_legal_move(move[0], move[1], player, opp, flip=True)
+                the_score, the_move, count = alphabeta(new_board, False, depth-1, count+1, alpha, beta)
+                if (the_score > alpha):
+                    alpha = the_score
+                    best_move = move
+                if beta <= alpha: break
+
+           return alpha, best_move, count
+     # minimzing player
+     else:
+           best_score = float("inf")
+           for move in moves_list:
+                new_board = deepcopy(Board)
+                new_board.play_legal_move(move[0], move[1], player, opp, flip=True)
+                the_score, the_move, count = alphabeta(new_board, True, depth-1, count+1, alpha, beta)
+                if (the_score < beta):
+                    beta = the_score
+                    best_move = move
+                if beta <= alpha: break
+
+           return beta, best_move, count
+
+
+
+def make_move(Board, player, opp, matchmaker=False):
+     # prune
+     prune = True
+     
      # check if any possible
      move_possible = Board.any_legal_move(player, opp)
      if not move_possible:
@@ -245,42 +294,43 @@ def make_move(Board, player, opp, debug=True, matchmaker=False):
           return (-1, -1)
      
      # get move
-     if matchmaker: row, col, count, elapsed_time = cpu_move(Board)
-     elif player==Board.player: row, col, count, elapsed_time = cpu_move(Board)
-     else:
-          print(matchmaker)
-          row, col = human_move(Board)
+     if matchmaker: row, col, count, elapsed_time = cpu_move(Board, prune)
+     elif player==Board.player: row, col, count, elapsed_time = cpu_move(Board, prune)
+     else: row, col = human_move(Board)
 
      # play if legal, else try again
      if not Board.play_legal_move(row, col, player, opp, flip=True): return (-1, -1)
 
      # print
-     if debug: 
+     if Board.debug:
           print()
           Board.print_stats(player, row, col)
           if player==Board.player: print("Number of nodes searched: %d \nTime taken: %.2f\n" % (count, elapsed_time))
           print("%s" % ('='*40))
      return row, col
 
-def cpu_move(Board):
+def cpu_move(Board, prune):
      # adjust depth according to game state
      num_pieces = Board.player_count + Board.opp_count
      if (num_pieces <= 8 or num_pieces >= 45): depth = Board.depth + 1
      else: depth = Board.depth
-     print("%s Player B using depth: %d %s" % ('='*10, depth, '='*10) )
+     #print("%s Player C using depth: %d %s" % ('='*10, depth, '='*10) )
 
      # get a quick low depth move
      start_time = time()
-     low_score, low_move, count = minimax(Board, True, Board.low_depth, 0)
+     if prune: low_score, low_move, count = alphabeta(Board, True, Board.low_depth, 0, float("-Inf"), float("Inf"))
+     else: low_score, low_move, count = minimax(Board, True, Board.low_depth, 0)
      elapsed_time = time() - start_time + 0.1
 
      # use remining time for a deeper search
      start_time = time()
-     best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0)
+     if prune: best_score, best_move, count = timeout(alphabeta, int(Board.time_limit - elapsed_time), Board, True, depth, 0, float("-Inf"), float("Inf"))
+     else: best_score, best_move, count = timeout(minimax, int(Board.time_limit - elapsed_time), Board, True, depth, 0)
+     
 
      # if timed out, use low depth move
      if best_move==None:
-          print("%s Using low depth move %s" % ('='*10, '='*10) )
+          #print("%s Using low depth move %s" % ('='*10, '='*10) )
           best_score, best_move = low_score, low_move
      
      elapsed_time = time() - start_time
@@ -295,7 +345,7 @@ def human_move(Board):
 
 
 def play():
-    Board = otHELLLLno()
+    Board = Gupta_Chou_MacArthur_Almakhdhub()
     print(Board)
 
     # CPU's initial move if black 
