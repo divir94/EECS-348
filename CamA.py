@@ -109,13 +109,15 @@ class CamA:
                else: return 0, -1, -1, -1
 
           # coin parity
-          parity = 100 * ( float(self.player_count - self.opp_count) / (self.player_count + self.opp_count))
-
+          parity = float(self.player_count - self.opp_count)
+          
+          
           # mobility
           num_player_moves = len(self.get_moves_list(self.player, self.opp))
           num_opp_moves = len(self.get_moves_list(self.opp, self.player))
-          mobility = 100 * ( float(num_player_moves - num_opp_moves) / (num_player_moves + num_opp_moves) )
-
+          mobility = float(num_player_moves - num_opp_moves)
+          
+          
           # corner
           corners = [(0,0), (0, self.size-1), (self.size-1, 0), (self.size-1, self.size-1)]
           player_corners = opp_corners = 0
@@ -124,7 +126,7 @@ class CamA:
                elif self.get_square(corner[0], corner[1]) == self.opp: opp_corners += 1
                
           if ( player_corners + opp_corners !=0 ):
-               stability = 100 * ( float(player_corners - opp_corners) / (player_corners + opp_corners) )
+               stability = float(player_corners - opp_corners)
           else: stability = 0
           
           # score
@@ -313,7 +315,8 @@ def cpu_move(Board, prune):
      #adjust depth according to number of possible moves
      moves_list = Board.get_moves_list(Board.player, Board.opp)
      num_moves = len(moves_list)
-     if (num_moves < 7): depth = 5
+     if (num_moves == 1): depth = 2
+     elif (num_moves < 7): depth = 5
      elif (num_moves > 12): depth = 3
      else: depth = Board.depth
      print("num moves possible: ", num_moves)
